@@ -73,6 +73,11 @@ struct Append<TypeList<Args1...>, TypeList<Args2...>> {
 
 
 template <typename TList, typename T> struct Erase;
+template <typename T>
+struct Erase<EmptyList, T>
+{
+    using Result = EmptyList;
+};
 template <typename T, typename... Tail>
 struct Erase<TypeList<T, Tail...>, T>
 {
@@ -124,6 +129,7 @@ int main() {
 
     static_assert(Length<Erase<AllList, char>::Result>::value == 4);
     static_assert(Length<Erase<AllList, double>::Result>::value == 4);
+    static_assert(Length<Erase<AllList, bool>::Result>::value == 5);
 
     return 0;
 }
