@@ -37,29 +37,6 @@ class C<Role::Mediator>
     std::map<int, B*> planes;
 };
 
-/*template <>
-class C<Role::Observer> : public B {
- public:
-    // A is Observer
-    // B is Subject
-
-    std::list<A*> observers;
-
-    void attach(A* a) {
-        observers.insert(a);
-    }
-
-    void detach(A* a) {
-        observers.remove(a);
-    }
-
-    void notify(B* b) {
-        for (auto& a: observers) {
-            a.Update(b);
-        }
-    }
-};*/
-
 // Почему бы не реализовать паттерн Observer вот так, а не класть его внутрь каждого B?
 template<>
 class C<Role::Observer>
@@ -76,4 +53,3 @@ class C<Role::Observer>
 
     void notify( B* b );
 };
-
