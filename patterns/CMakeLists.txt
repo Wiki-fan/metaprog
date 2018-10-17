@@ -3,4 +3,4 @@ project(patterns)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(patterns main.cpp)
+add_executable(patterns A.h A.cpp B.h B.cpp BaseC.h C.h C.cpp main.cpp)
