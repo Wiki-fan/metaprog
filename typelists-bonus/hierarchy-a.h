@@ -39,7 +39,7 @@ template
     <
         class TList,
         template<class AtomicType, class Base> class Unit,
-        class Root = EmptyType // Класс EmptyType описан в главе 2
+        class Root = NullType // Класс NullType описан в главе 2
     >
 class GenLinearHierarchy;
 

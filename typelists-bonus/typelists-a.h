@@ -4,8 +4,6 @@ namespace a
 {
 class NullType {};
 
-class EmptyType {};
-
 template<class T, class U>
 struct TypeList {
     typedef T head;

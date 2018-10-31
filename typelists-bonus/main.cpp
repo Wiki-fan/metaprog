@@ -89,9 +89,25 @@ void test_hierarchy() {
 
 }
 
+using WidgetInfoLinear = GenScatterHierarchy<TypeList<int, std::string>, Holder>;
+
+void test_linear_hierarchy() {
+
+    WidgetInfoLinear obj;
+    static_cast<Holder<std::string>&>(obj).value = "hello";
+
+    std::string name = static_cast<Holder<std::string>&>(obj).value;
+    assert(name == "hello");
+
+    //GetSpec3<std::string, Holder, TypeList<int, std::string>>(obj);
+    assert(GetSpec<std::string>(obj).value == "hello");
+
+}
+
 int main() {
     test_typelists();
     test_hierarchy();
-
+    test_linear_hierarchy();
+    
     return 0;
 }
