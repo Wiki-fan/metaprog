@@ -3,4 +3,4 @@ project(typelists_bonus)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(typelists_bonus main.cpp)
+add_executable(typelists_bonus main.cpp hierarchy-a.h)

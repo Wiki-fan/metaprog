@@ -1,103 +1,18 @@
 #include <iostream>
 #include <cassert>
+#include <vector>
+#include "typelists-m.h"
+#include "hierarchy-m.h"
 
-struct NullType {};
-
-template<typename T=NullType, typename... U>
-struct TypeList {
-    using head = T;
-    using tail = TypeList<U...>;
-};
-using EmptyList = TypeList<>;
-
-
-template<typename TypeList>
-struct Length {
-    enum { value = Length<typename TypeList::tail>::value + 1 };
-};
-template<>
-struct Length<EmptyList> {
-    enum { value = 0 };
-};
-template<>
-struct Length<NullType> {
-    enum { value = 0 };
-};
-
-
-template<typename TList, unsigned int index>
-struct TypeAt;
-template<typename Head, typename... Tail>
-struct TypeAt<TypeList<Head, Tail...>, 0> {
-    using Result = Head;
-};
-template<typename Head, typename... Tail, unsigned int i>
-struct TypeAt<TypeList<Head, Tail...>, i> {
-    using Result = typename TypeAt<TypeList<Tail...>, i - 1>::Result;
-};
-
-
-template<typename TList, typename T>
-struct IndexOf;
-template<typename T>
-struct IndexOf<EmptyList, T> {
-    enum { value = -1 };
-};
-template<typename T, typename... Tail>
-struct IndexOf<TypeList<T, Tail...>, T> {
-    enum { value = 0 };
-};
-template<typename Head, typename... Tail, typename T>
-struct IndexOf<TypeList<Head, Tail...>, T> {
- private:
-    enum { temp = IndexOf<TypeList<Tail...>, T>::value };
- public:
-    enum { value = temp == -1 ? -1 : 1 + temp };
-};
-
-
-template<typename TList, typename T>
-struct Append;
-template<typename T, typename... Args>
-struct Append<TypeList<Args...>, T> {
-    using Result = TypeList<Args..., T>;
-};
-template<typename... Args2>
-struct Append<EmptyList, TypeList<Args2...>> {
-    using Result = TypeList<Args2...>;
-};
-template<typename... Args1, typename... Args2>
-struct Append<TypeList<Args1...>, TypeList<Args2...>> {
-    using Result = TypeList<Args1..., Args2...>;
-};
-
-
-template <typename TList, typename T> struct Erase;
-template <typename T>
-struct Erase<EmptyList, T>
-{
-    using Result = EmptyList;
-};
-template <typename T, typename... Tail>
-struct Erase<TypeList<T, Tail...>, T>
-{
-    using Result = TypeList<Tail...>;
-};
-template <typename Head, typename... Tail, typename T >
-struct Erase<TypeList<Head, Tail...>, T>
-{
-    using Result = typename Append<TypeList<Head>,
-                                   typename Erase<TypeList<Tail...>, T>::Result>::Result;
-};
-
-
+using namespace m;
 
 using CharList = TypeList<char, signed char, unsigned char>;
 using NumList = TypeList<int, double>;
 using AllList = Append<CharList, NumList>::Result;
 using AllWithoutInt = Erase<AllList, int>::Result;
 
-int main() {
+void test_typelists() {
+
     // Задание 1: пофиксить длину EmptyList. Просто специфицируем шаблон.
     static_assert(Length<CharList>::value == 3);
     static_assert(Length<TypeList<int>>::value == 1);
@@ -130,6 +45,53 @@ int main() {
     static_assert(Length<Erase<AllList, char>::Result>::value == 4);
     static_assert(Length<Erase<AllList, double>::Result>::value == 4);
     static_assert(Length<Erase<AllList, bool>::Result>::value == 5);
+}
+
+struct Int {
+    int intValue;
+};
+
+struct Char {
+    char value;
+};
+
+using StructList = TypeList<Int, Char>;
+using StructVectorHierarchy = GenScatterHierarchy<StructList, std::vector>;
+typedef GenScatterHierarchy<CharList, std::vector> H;
+
+template <class T>
+struct Holder {
+    T value;
+};
+using WidgetInfo = GenScatterHierarchy<TypeList<int, std::string>, Holder>;
+
+template<typename T, template<typename, typename...> typename Unit, typename TL>
+Holder<T>& GetSpec(GenScatterHierarchy<TL, Unit>& obj) {
+    return static_cast<Unit<T>&>(obj);
+}
+
+void test_hierarchy() {
+    H::LeftBase lb;
+    H vec;
+    StructVectorHierarchy swh;
+    auto& a = static_cast<std::vector<Int>&>(swh);
+    a.push_back(Int());
+    a[0].intValue = 4;
+
+    WidgetInfo obj;
+    static_cast<Holder<std::string>&>(obj).value = "hello";
+
+    std::string name = static_cast<Holder<std::string>&>(obj).value;
+    assert(name == "hello");
+
+    //GetSpec3<std::string, Holder, TypeList<int, std::string>>(obj);
+    assert(GetSpec<std::string>(obj).value == "hello");
+
+}
+
+int main() {
+    test_typelists();
+    test_hierarchy();
 
     return 0;
 }
