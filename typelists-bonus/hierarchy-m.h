@@ -6,44 +6,58 @@ namespace m
 {
 using namespace m;
 
-template<class TList, template<class, class... Other> class Unit>
+template<class TList, template<class, class...> class Unit>
 class GenScatterHierarchy;
 
-template<class T1, class T2, template<class, class... Other> class Unit>
-class GenScatterHierarchy<TypeList < T1, T2>, Unit>
+template<typename T1, typename... T2, template<class, class...> class Unit>
+class GenScatterHierarchy<TypeList<T1, T2...>, Unit>
     : public GenScatterHierarchy<T1, Unit>,
-      public GenScatterHierarchy<T2, Unit>
+      public GenScatterHierarchy<TypeList<T2...>, Unit>
 {
  public:
-    typedef TypeList <T1, T2> TList;
+    typedef TypeList <T1, T2...> TList;
     typedef GenScatterHierarchy<T1, Unit> LeftBase;
-    typedef GenScatterHierarchy<T2, Unit> RightBase;
+    typedef GenScatterHierarchy<TypeList<T2...>, Unit> RightBase;
 };
 
-// Передача атомарного типа (не списка типов) классу Unit
-template<class AtomicType, template<class, class...> class Unit>
+template<typename AtomicType, template<class, class...> class Unit>
 class GenScatterHierarchy
     : public Unit<AtomicType> {
  public:
     typedef Unit<AtomicType> LeftBase;
 };
 
-template<template<class> class Unit>
-class GenScatterHierarchy<NullType, Unit> {
+template<template<class, class...> class Unit>
+class GenScatterHierarchy<EmptyList, Unit> {
 };
 
 
-template<class TList, template<class T, class Base, class... Other> class Unit, class Base=NullType>
+template<class TList, template<class T, class Parent, class...> class Unit, class Base=NullType>
 class GenLinearHierarchy;
 
-template<class T1, class T2, template<class T, class Base, class... Other> class Unit, class Base>
-class GenLinearHierarchy<TypeList<T1, T2>, Unit, Base>
-    : public Unit<T1, GenLinearHierarchy<T2, Unit, Base>>
-{};
+template<class T1, class... T2, template<class T, class Parent, class...> class Unit, class Base>
+class GenLinearHierarchy<TypeList<T1, T2...>, Unit, Base>
+    : public Unit<T1, GenLinearHierarchy<TypeList<T2...>, Unit, Base>>
+{
+ public:
+    using current = T1;
+    using child = GenLinearHierarchy<TypeList<T2...>, Unit, Base>;
+    using TList = TypeList<T1, T2...>;
+};
 
-template<typename AtomicType, template<class T, class Base, class... Other> class Unit, class Base>
-class GenLinearHierarchy<TypeList <AtomicType>, Unit, Base>
+template<typename AtomicType, template<class T, class Parent, class...> class Unit, class Base>
+class GenLinearHierarchy<TypeList<AtomicType>, Unit, Base>
     : public Unit<AtomicType, Base>
-{};
+{
+public:
+    using current = AtomicType;
+};
+
+
+template<typename T, template<typename, typename...> typename Unit, typename TL>
+Unit<T>& GetSpec(GenScatterHierarchy<TL, Unit>& obj) {
+    return static_cast<Unit<T>&>(obj);
+}
+
 
 }
