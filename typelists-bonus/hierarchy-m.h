@@ -41,8 +41,9 @@ class GenLinearHierarchy<TypeList<T1, T2...>, Unit, Base>
 {
  public:
     using current = T1;
-    using child = GenLinearHierarchy<TypeList<T2...>, Unit, Base>;
+    using next = GenLinearHierarchy<TypeList<T2...>, Unit, Base>;
     using TList = TypeList<T1, T2...>;
+    using parent = Unit<T1, GenLinearHierarchy<TypeList<T2...>, Unit, Base>>;
 };
 
 template<typename AtomicType, template<class T, class Parent, class...> class Unit, class Base>
@@ -51,6 +52,7 @@ class GenLinearHierarchy<TypeList<AtomicType>, Unit, Base>
 {
 public:
     using current = AtomicType;
+    using parent = Unit<AtomicType, Base>;
 };
 
 
@@ -59,5 +61,9 @@ Unit<T>& GetSpec(GenScatterHierarchy<TL, Unit>& obj) {
     return static_cast<Unit<T>&>(obj);
 }
 
+template<typename T, template<typename, typename, typename...> typename Unit, typename TL, typename Base>
+Unit<T, Base>& GetSpecLinear(GenLinearHierarchy<TL, Unit, Base>& obj) {
+    return static_cast<Unit<T, Base>&>(obj);
+}
 
 }

@@ -80,7 +80,8 @@ void test_scatter_hierarchy() {
     a.push_back(Int());
     a[0].intValue = 4;
 
-    assert(typeid(WidgetInfoScatter::LeftBase) == typeid(TypeList<int>));
+    assert(typeid(WidgetInfoScatter::LeftBase) == typeid(GenScatterHierarchy<int, Holder>));
+    assert(typeid(WidgetInfoScatter::LeftBase::LeftBase) == typeid(Holder<int>));
 
     WidgetInfoScatter obj;
     static_cast<Holder<std::string>&>(obj).value = "hello";
@@ -93,30 +94,38 @@ void test_scatter_hierarchy() {
 
 }
 
-template <class T, class Base>
-struct HolderLinear {
+template <class T, class Parent>
+struct HolderLinear : public Parent {
     T value;
 };
-using WidgetInfoLinear = GenLinearHierarchy<TypeList<int, double>, HolderLinear, NullType>;
 
-/*void test_linear_hierarchy() {
+using WidgetInfoLinear = GenLinearHierarchy<TypeList<int, std::string, double>, HolderLinear, NullType>;
+
+void test_linear_hierarchy() {
     assert(typeid(WidgetInfoLinear::current) == typeid(int));
-    assert(typeid(WidgetInfoLinear) == typeid(int));
-    WidgetInfoLinear* obj;
-    //static_cast<HolderLinear<double, NullType>*>(obj).value = 6.0;
+    assert(typeid(WidgetInfoLinear::next::current) == typeid(std::string));
+    assert(typeid(WidgetInfoLinear::next::next::current) == typeid(double));
+    assert(typeid(WidgetInfoLinear::next::next) == typeid(GenLinearHierarchy<TypeList<double>, HolderLinear, NullType>));
+    assert(typeid(WidgetInfoLinear::next) == typeid(GenLinearHierarchy<TypeList<std::string, double>, HolderLinear, NullType>));
 
+    assert(typeid(WidgetInfoLinear::parent) == typeid(HolderLinear<int, GenLinearHierarchy<TypeList<std::string, double>, HolderLinear, NullType>>));
+    assert(typeid(WidgetInfoLinear::next::parent) == typeid(HolderLinear<std::string, GenLinearHierarchy<TypeList<double>, HolderLinear, NullType>>));
+    assert(typeid(WidgetInfoLinear::next::next::parent) == typeid(HolderLinear<double, NullType>));
 
-    //static_cast<HolderLinear<std::string, GenLinearHierarchy<TypeList<double>, HolderLinear, NullType>&>>(obj).value = "hello";
+    WidgetInfoLinear obj;
+    static_cast<HolderLinear<double, NullType>&>(obj).value = 6.0;
 
-    std::string name = static_cast<Holder<std::string>&>(obj).value;
+    /*static_cast<HolderLinear<std::string, GenLinearHierarchy<TypeList<double>, HolderLinear, NullType>&>>(obj).value = "hello";
+
+    std::string name = static_cast<HolderLinear<std::string, GenLinearHierarchy<TypeList<double>, HolderLinear, NullType>>&>(obj).value;
     assert(name == "hello");
-    assert(GetSpec<std::string>(obj).value == "hello");
+    assert(GetSpecLinear<std::string>(obj).value == "hello");*/
 }
-*/
+
 int main() {
     test_typelists();
     test_scatter_hierarchy();
-    //test_linear_hierarchy();
+    test_linear_hierarchy();
 
     //m::test_factory();
     simple::test_factory();
