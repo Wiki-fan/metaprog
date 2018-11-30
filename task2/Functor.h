@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cassert>
+#include <memory>
 #include "typelists-m.h"
 
 
@@ -176,31 +177,86 @@ namespace m
 template<typename ResultType_, typename... ArgsTypes_>
 struct Functor
 {
+    struct FunctorWrapperBase
+    {
+        virtual ResultType_ operator()( ArgsTypes_... args ) = 0;
+
+        virtual FunctorWrapperBase* Clone(const FunctorWrapperBase* other) = 0;
+    };
+
+    template<typename Fun_>
+    struct FunctorWrapper : public FunctorWrapperBase
+    {
+        Fun_ fun;
+
+        FunctorWrapper( Fun_ f ) : fun( f )
+        {
+        };
+
+        ResultType_ operator()( ArgsTypes_... args )
+        {
+            return fun( args... );
+        }
+
+        FunctorWrapper* Clone(const FunctorWrapperBase* other) {
+            Fun_ f = static_cast<const FunctorWrapper*>(other)->fun;
+            auto tmp = new FunctorWrapper(f);
+            return tmp;
+        }
+    };
+
     using ResultType=ResultType_;
     using ArgsTypeList = TypeList<ArgsTypes_...>;
     using FuncPtrType = ResultType( * )( ArgsTypes_... );
 
-    FuncPtrType funcPtr;
+    std::unique_ptr<FunctorWrapperBase> wrapper;
 
-    explicit Functor( FuncPtrType funPtr_ ) : funcPtr( funPtr_ )
+    Functor( ) = default;
+
+    template<typename Fun>
+    explicit Functor( Fun fun_ ) : wrapper( new FunctorWrapper<Fun>( fun_ ) )
     {
     }
 
-    ResultType Call(ArgsTypes_... args) {
-        return funcPtr(args...);
+    explicit Functor( FuncPtrType ptr) : wrapper( new FunctorWrapper<FuncPtrType>( ptr ) )
+    {
+    }
+
+    Functor(const Functor& other) : wrapper(wrapper->Clone(other.wrapper.get())) {}
+
+    Functor& operator=(const Functor& rhs)
+    {
+        Functor copy(rhs);
+        // swap auto_ptrs by hand
+        FunctorWrapperBase* p = wrapper.release();
+        wrapper.reset(copy.wrapper.release());
+        copy.wrapper.reset(p);
+        return *this;
+    }
+
+    ResultType Call( ArgsTypes_... args )
+    {
+        return ( *wrapper )( args... );
+    }
+
+    ResultType operator()( ArgsTypes_... args )
+    {
+        return Call( args... );
     }
 };
 
-int ExampleFunc(int a, char b) {
+int ExampleFunc( int a, char b )
+{
     return 1;
 }
 
-using ExampleFuncType = int(*)(int, char);
+using ExampleFuncType = int ( * )( int, char );
 
-void TestFunctor() {
+void TestFunctor()
+{
     ExampleFuncType t = ExampleFunc;
-    Functor<int, int, char> f(ExampleFunc);
-    assert(f.Call(1, 'c') == 1);
+    Functor<int, int, char> f( ExampleFunc );
+    assert( f.Call( 1, 'c' ) == 1 );
 }
 
 }

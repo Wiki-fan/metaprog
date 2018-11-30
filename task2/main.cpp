@@ -3,6 +3,8 @@
 #include <vector>
 #include "typelists-m.h"
 #include "hierarchy-m.h"
+#include "functor_dispatch.h"
+
 
 using namespace m;
 
@@ -132,7 +134,9 @@ int main()
     assert(typeid(Root<TL8, 8>::parent::parent2::parent2::parent1::parent::parent) == typeid(Int2Type<2>));
     assert(typeid(Root<TL8, 8>::parent::parent2::parent2::parent1::base::parent::parent) == typeid(Int2Type<3>));
 
-    TypeList<std::vector> s;
+    TestFunctor();
+    TestFunctorDispatcher();
+
     return 0;
 }
 /*

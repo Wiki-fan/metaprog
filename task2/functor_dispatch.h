@@ -5,6 +5,8 @@
 #include <map>
 #include <iostream>
 #include "Functor.h"
+#include "ExampleTypeLists.h"
+
 
 namespace m {
 
@@ -112,7 +114,7 @@ template <class BaseLhs, class BaseRhs,
     class Fun, bool SwapArgs>
 class FunctorDispatcherHelper
 {
-    Fun* fun_;
+    Fun fun_;
     ResultType Fire(BaseLhs& lhs, BaseRhs& rhs,Int2Type<false>)
     {
         return fun_(CastLhs::Cast(lhs), CastRhs::Cast(rhs));
@@ -145,7 +147,7 @@ template <class BaseLhs, class BaseRhs = BaseLhs,
 class FunctorDispatcher
 {
     typedef TypeList<BaseLhs&, BaseRhs&> ArgsList;
-    typedef Functor<ResultType, ArgsList> FunctorType;
+    typedef Functor<ResultType, BaseLhs&, BaseRhs&> FunctorType;
 
     DispatcherBackend<BaseLhs, BaseRhs, ResultType, FunctorType> backEnd_;
 
@@ -195,33 +197,56 @@ class FunctorDispatcher
     }
 };
 
-class Shape {
+struct Shape {
+    virtual ~Shape() = default;
+    int a;
 };
 
-class Square : public Shape {
+struct Square : public Shape {
+    Square() {}
+    ~Square() = default;
 };
 
-class Circle : public Shape {
+struct Circle : public Shape {
+    Circle() {}
+    ~Circle() = default;
 };
 
-class Triangle : public Shape {
+struct Triangle : public Shape {
+    Triangle() {}
+    ~Triangle() = default;
 };
 
-void DoSquareCircle(Square* a, Circle* b) {
+void DoSquareCircle(Square& a, Circle& b) {
     std::cout << "square circle" << std::endl;
 }
-void Do(Triangle* a, Circle* b) {
+void DoSquareCirclePtr(Square* a, Circle* b) {
+    std::cout << "square circle" << std::endl;
+}
+void Do(Triangle& a, Circle& b) {
     std::cout << "triangle circle" << std::endl;
 }
 
+struct DoSquareCircleHatch {
+    void operator()(Square& a, Circle& b) {
+        std::cout << "square circle" << std::endl;
+    }
+};
+
 void TestFunctorDispatcher() {
     Functor<int, int, char> f(ExampleFunc);
-
-    FunctorDispatcher<Shape> disp;
-    disp.Add<Square&, Circle&>(DoSquareCircle);
-
     Square* square = new Square;
     Circle* circle = new Circle;
+
+    /*FunctorDispatcher<Shape&> disp;
+    disp.Add<Square&, Circle&>(DoSquareCircle);
+    disp.Go(*square, *circle);
+     */
+    /*FunctorDispatcher<Shape*> disp;
+    disp.Add<Square*, Circle*>(DoSquareCirclePtr);
+    disp.Go(square, circle);*/
+    FunctorDispatcher<Shape> disp;
+    disp.Add<Square, Circle>(DoSquareCircleHatch());
     disp.Go(*square, *circle);
 }
 
