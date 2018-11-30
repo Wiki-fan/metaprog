@@ -1,6 +1,8 @@
 #pragma once
 #include "typelists-m.h"
-
+#include "ExampleTypeLists.h"
+#include <typeinfo>
+#include <cassert>
 
 namespace m
 {
@@ -51,9 +53,25 @@ class GenLinearHierarchy<TypeList<AtomicType>, Unit, Base>
     : public Unit<AtomicType, Base>
 {
 public:
-    using current = AtomicType;
+    using final = AtomicType;
     using parent = Unit<AtomicType, Base>;
 };
+
+template<class T, class Base>
+class TestLinearHierarchyInheritanceProxy : public T, public Base
+{
+};
+
+using test = GenLinearHierarchy<TL3, TestLinearHierarchyInheritanceProxy>;
+
+void TestLinearHierarchy()
+{
+    assert(typeid(test::current) == typeid(Int2Type<0>));
+    //GenLinearHierarchy<Skip<1, TL8>::value, TestLinearHierarchyInheritanceProxy>::current;
+    assert(typeid(test::next::current) == typeid(Int2Type<1>));
+    assert(typeid(test::next::next::final) == typeid(Int2Type<2>));
+}
+
 
 
 template<typename T, template<typename, typename...> typename Unit, typename TL>
