@@ -3,7 +3,6 @@
 #include <vector>
 #include "typelists-m.h"
 #include "hierarchy-m.h"
-#include "functor_dispatch.h"
 
 
 using namespace m;
@@ -30,15 +29,15 @@ struct InheritanceProxy: public Parent, public Base {
     using base = Base;
 };
 
-template<int fib, int n, typename TList>
+template<int i, int n, typename TList>
 struct GetCurrentRow {
-    const static int fib_ = fib;
-    const static int curFibNum = Fib<fib>::value;
+    const static int i_ = i;
+    const static int curFibNum = Fib<i>::value+1;
     const static int curCount = curFibNum > n? n: curFibNum;
     const static int nextCount = curFibNum > n? 0: n-curFibNum;
     using curTypeList = typename Take<curCount, TList>::value;
     using nextTypeList = typename Skip<curCount, TList>::value;
-    using next = GetCurrentRow<fib+1, nextCount, typename Skip<curCount, TList>::value>;
+    using next = GetCurrentRow<i+1, nextCount, typename Skip<curCount, TList>::value>;
     using hierarchy = GenLinearHierarchy<curTypeList, InheritanceProxy, NullType>;
 };
 
@@ -52,44 +51,43 @@ struct Branch {
 };
 
 
-template<class TList, int fib, int n, template<class, class...> class Unit>
+template<class TList, int i, int n, template<class, class...> class Unit>
 class GenScatterHierarchyOurs;
 
-template<typename T1, typename... T2, int fib, int n, template<class, class...> class Unit>
-class GenScatterHierarchyOurs<TypeList<T1, T2...>, fib, n, Unit>
-    : public GetCurrentRow<fib, n, TypeList<T1, T2...>>::hierarchy,
+template<typename T1, typename... T2, int i, int n, template<class, class...> class Unit>
+class GenScatterHierarchyOurs<TypeList<T1, T2...>, i, n, Unit>
+    : public GetCurrentRow<i, n, TypeList<T1, T2...>>::hierarchy,
       public GenScatterHierarchyOurs<
-          typename GetCurrentRow<fib, n, TypeList<T1, T2...>>::nextTypeList,
-          GetCurrentRow<fib, n, TypeList<T1, T2...>>::fib_+1,
-          GetCurrentRow<fib, n, TypeList<T1, T2...>>::nextCount,
+          typename GetCurrentRow<i, n, TypeList<T1, T2...>>::nextTypeList,
+          GetCurrentRow<i, n, TypeList<T1, T2...>>::i_+1,
+          GetCurrentRow<i, n, TypeList<T1, T2...>>::nextCount,
           Unit>
 {
  public:
-    using parent1 = typename GetCurrentRow<fib, n, TypeList<T1, T2...>>::hierarchy;
+    using parent1 = typename GetCurrentRow<i, n, TypeList<T1, T2...>>::hierarchy;
     using parent2 = GenScatterHierarchyOurs<
-        typename GetCurrentRow<fib, n, TypeList<T1, T2...>>::nextTypeList,
-        GetCurrentRow<fib, n, TypeList<T1, T2...>>::fib_+1,
-        GetCurrentRow<fib, n, TypeList<T1, T2...>>::nextCount,
+        typename GetCurrentRow<i, n, TypeList<T1, T2...>>::nextTypeList,
+        GetCurrentRow<i, n, TypeList<T1, T2...>>::i_+1,
+        GetCurrentRow<i, n, TypeList<T1, T2...>>::nextCount,
         Unit>;
 };
 
-template<typename AtomicType, int fib, int n, template<class, class...> class Unit>
+template<typename AtomicType, int i, int n, template<class, class...> class Unit>
 class GenScatterHierarchyOurs
-    : public GetCurrentRow<fib, n, TypeList<AtomicType>>::hierarchy {
+    : public GetCurrentRow<i, n, TypeList<AtomicType>>::hierarchy {
  public:
-    using parent = typename GetCurrentRow<fib, n, TypeList<AtomicType>>::hierarchy;
+    using parent = typename GetCurrentRow<i, n, TypeList<AtomicType>>::hierarchy;
 };
 
-template<int fib, int n, template<class, class...> class Unit>
-class GenScatterHierarchyOurs<EmptyList, fib, n, Unit> {
+template<int i, int n, template<class, class...> class Unit>
+class GenScatterHierarchyOurs<EmptyList, i, n, Unit> {
 };
 
-template<class TList, int n>
-struct Root : public GenScatterHierarchyOurs<TList, 0, n, InheritanceProxy> {
-    using parent = GenScatterHierarchyOurs<TList, 0, n, InheritanceProxy>;
+template<class TList>
+ struct Root : public GenScatterHierarchyOurs<TList, 0, Length<TList>::value, InheritanceProxy> {
+    using parent = GenScatterHierarchyOurs<TList, 0, Length<TList>::value, InheritanceProxy>;
 };
 
-using tl = TypeList<int, float, double, char>;
 
 int main()
 {
@@ -99,43 +97,37 @@ int main()
     static_assert(Fib<0>::value == 1);
     static_assert(Fib<6>::value == 13);
 
-    static_assert(Branch<8, TL8>::num::curCount == 1);
-    static_assert(Branch<8, TL8>::num::next::curCount == 1);
-    static_assert(Branch<8, TL8>::num::next::next::curCount == 2);
-    static_assert(Branch<8, TL8>::num::next::next::next::curCount == 3);
-
-    assert(typeid(Skip<2, tl>::value) == typeid(TypeList<double, char>));
-    assert(typeid(Skip<1, tl>::value) == typeid(TypeList<float, double, char>));
-    assert(typeid(Skip<3, tl>::value) == typeid(TypeList<char>));
-
-    assert(typeid(Take<0, tl>::value) == typeid(TypeList<>));
-    assert(typeid(Take<1, tl>::value) == typeid(TypeList<int>));
-    assert(typeid(Take<2, tl>::value) == typeid(TypeList<int, float>));
-    assert(typeid(Take<3, tl>::value) == typeid(TypeList<int, float, double>));
-
+    static_assert(Branch<8, TL8>::num::curCount == 2);
+    static_assert(Branch<8, TL8>::num::next::curCount == 2);
+    static_assert(Branch<8, TL8>::num::next::next::curCount == 3);
+    static_assert(Branch<8, TL8>::num::next::next::next::curCount == 1);
 
     TestLinearHierarchy();
 
     // Проверка, что это разворачивается в несколько веток с нужными параметрами
-    assert(typeid(Root<TL8, 8>::parent) == typeid(GenScatterHierarchyOurs<TL8, 0, 8, InheritanceProxy>));
-    assert(typeid(Root<TL8, 8>::parent::parent1) == typeid(GetCurrentRow<0, 8, TL8>::hierarchy));
-    assert(typeid(Root<TL8, 8>::parent::parent2::parent1) == typeid(GetCurrentRow<1, 7, Skip<1, TL8>::value>::hierarchy));
-    assert(typeid(Root<TL8, 8>::parent::parent2::parent2::parent1) == typeid(GetCurrentRow<2, 6, Skip<2, TL8>::value>::hierarchy));
-    assert(typeid(Root<TL8, 8>::parent::parent2::parent2::parent2::parent1) == typeid(GetCurrentRow<3, 4, Skip<4, TL8>::value>::hierarchy));
+    assert(typeid(Root<TL8>::parent) == typeid(GenScatterHierarchyOurs<TL8, 0, 8, InheritanceProxy>));
+    assert(typeid(Root<TL8>::parent::parent1) == typeid(GetCurrentRow<0, 8, TL8>::hierarchy));
+    assert(typeid(Root<TL8>::parent::parent2::parent1)
+        == typeid(GetCurrentRow<1, 6, Skip<2, TL8>::value>::hierarchy));
+    assert(typeid(Root<TL8>::parent::parent2::parent2::parent1)
+        == typeid(GetCurrentRow<2, 4, Skip<4, TL8>::value>::hierarchy));
+    assert(typeid(Root<TL8>::parent::parent2::parent2::parent2::parent1)
+        == typeid(GetCurrentRow<3, 1, Skip<7, TL8>::value>::hierarchy));
 
     // Проверка, что все элементы TypeList таки стали родителями Root, и что в ветке нужное количество элементов
-    assert(typeid(Root<TL8, 8>::parent::parent1::final) == typeid(Int2Type<0>));
-    assert(typeid(Root<TL8, 8>::parent::parent2::parent1::final) == typeid(Int2Type<1>));
-    assert(typeid(Root<TL8, 8>::parent::parent2::parent2::parent1::current) == typeid(Int2Type<2>));
-    assert(typeid(Root<TL8, 8>::parent::parent2::parent2::parent1::next::final) == typeid(Int2Type<3>));
+    assert(typeid(Root<TL8>::parent::parent1::current) == typeid(Int2Type<0>));
+    assert(typeid(Root<TL8>::parent::parent1::next::final) == typeid(Int2Type<1>));
+    assert(typeid(Root<TL8>::parent::parent2::parent1::current) == typeid(Int2Type<2>));
+    assert(typeid(Root<TL8>::parent::parent2::parent1::next::final) == typeid(Int2Type<3>));
+    assert(typeid(Root<TL8>::parent::parent2::parent2::parent1::current) == typeid(Int2Type<4>));
+    assert(typeid(Root<TL8>::parent::parent2::parent2::parent1::next::current) == typeid(Int2Type<5>));
+    assert(typeid(Root<TL8>::parent::parent2::parent2::parent1::next::next::final) == typeid(Int2Type<6>));
+    assert(typeid(Root<TL8>::parent::parent2::parent2::parent2::parent1::final) == typeid(Int2Type<7>));
 
     // Проверка, что элементы одной ветки наследуются друг от друга.
-    assert(typeid(Root<TL8, 8>::parent::parent1::parent::parent) == typeid(Int2Type<0>));
-    assert(typeid(Root<TL8, 8>::parent::parent2::parent2::parent1::parent::parent) == typeid(Int2Type<2>));
-    assert(typeid(Root<TL8, 8>::parent::parent2::parent2::parent1::base::parent::parent) == typeid(Int2Type<3>));
-
-    TestFunctor();
-    TestFunctorDispatcher();
+    assert(typeid(Root<TL8>::parent::parent1::parent::parent) == typeid(Int2Type<0>));
+    assert(typeid(Root<TL8>::parent::parent2::parent2::parent1::parent::parent) == typeid(Int2Type<2>));
+    assert(typeid(Root<TL8>::parent::parent2::parent2::parent1::base::parent::parent) == typeid(Int2Type<3>));
 
     return 0;
 }

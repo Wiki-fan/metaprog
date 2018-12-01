@@ -1,4 +1,6 @@
 #pragma once
+#include <typeinfo>
+#include <cassert>
 
 namespace m
 {
@@ -117,5 +119,17 @@ struct Take<n, TypeList<Head, Tail...>> {
     using value = typename Append<TypeList<Head>, typename Take<n-1, TypeList<Tail...>>::value>::Result;
 };
 
+
+using tl = TypeList<int, float, double, char>;
+void TestTypeList() {
+    assert(typeid(Skip<2, tl>::value) == typeid(TypeList<double, char>));
+    assert(typeid(Skip<1, tl>::value) == typeid(TypeList<float, double, char>));
+    assert(typeid(Skip<3, tl>::value) == typeid(TypeList<char>));
+
+    assert(typeid(Take<0, tl>::value) == typeid(TypeList<>));
+    assert(typeid(Take<1, tl>::value) == typeid(TypeList<int>));
+    assert(typeid(Take<2, tl>::value) == typeid(TypeList<int, float>));
+    assert(typeid(Take<3, tl>::value) == typeid(TypeList<int, float, double>));
+}
 
 }
