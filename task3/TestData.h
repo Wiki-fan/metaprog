@@ -89,7 +89,6 @@ struct UniversalDecompressor
 
     void decompress()
     {
-        //void* srcMem = reinterpret_cast<void*>(&compressedObject);
         void* srcMem = compressedObject.GetPtr();
         ImitateCleverDecompressionAlgorithm( dstMem, srcMem, sizeof( TCompressedType ) );
     }
@@ -104,110 +103,20 @@ struct NoneType
 
 using Reader1TList1 = TypeList<int, char, Foo>;
 
+
 using Reader2TList1 = TypeList<Foo, Foo>;
 using Reader2TList2 = TypeList<NoneType, CompressedFooSelfDecompressable>;
 using Reader2TList3 = TypeList<UniversalDecompressor<CompressedFoo>, NoDecompressor>;
 
-template<typename CallableType, CallableType ct, typename... Args>
-class Functor
-{
- public:
-    using FunType = CallableType;
-    using t = CallableType;
-    using RetType = typename std::result_of<CallableType( Args... )>::type;
-
-    auto operator()( Args... args )->RetType
-    {
-        return ( *f )( args... );
-    }
-
- private:
-    const FunType f = ct;
-};
-
-template<typename CallableType, typename... Args>
-class NiceFunctor
-{
- public:
-    using FunType = CallableType;
-    using t = CallableType;
-    using RetType = typename std::result_of<CallableType( Args... )>::type;
-
-    NiceFunctor( const FunType& f_ ) : f( f_ )
-    {
-
-    }
-
-    auto operator()( Args... args )->RetType
-    {
-        return ( *f )( args... );
-    }
-
- private:
-    const FunType& f;
-};
-
-template<typename CallableEntity, typename... Args>
-NiceFunctor<CallableEntity, Args...> make_functor( CallableEntity ce, Args... args )
-{
-    return NiceFunctor<CallableEntity, Args...>( ce );
-}
-
-NiceFunctor<decltype( &ImitateCleverPostDecompressionAlgorithm ), void*, void*, size_t>
-    f( ImitateCleverPostDecompressionAlgorithm );
-//NiceFunctor<decltype(&ImitateCleverPostDecompressionAlgorithm)> f2(ImitateCleverPostDecompressionAlgorithm);
-//auto f2 = make_functor<decltype(&ImitateCleverPostDecompressionAlgorithm)>(ImitateCleverPostDecompressionAlgorithm);
-Functor<decltype( &ImitateCleverPostDecompressionAlgorithm ),
-        ImitateCleverPostDecompressionAlgorithm,
-        void*,
-        void*,
-        size_t> f3;
 
 using Reader3TList1 = TypeList<Foo, Foo, Foo, Foo>;
 using Reader3TList2 = TypeList<NoneType, CompressedFooSelfDecompressable, CompressedFooSelfDecompressable, NoneType>;
-//using Reader3TList3 = TypeList<Functor<void, void*, void*, size_t, (&ImitateCleverPostDecompressionAlgorithm)>, NoDecompressor>;
-using Reader3TList3 = TypeList<
-    Functor<decltype( &ImitateCleverPostDecompressionAlgorithm ),
-            ImitateCleverPostDecompressionAlgorithm,
-            void*,
-            void*,
-            size_t>,
-    NoDecompressor>;
-
-template<typename RetType_, typename... Args>
-class SimpleFunctor
-{
- public:
-    using RetType = RetType_;
-    using FunType = RetType ( * )( Args... );
-
-    SimpleFunctor( FunType f_ ) : f( f_ )
-    {
-    }
-
-    RetType operator()( Args... args )
-    {
-        return ( *f )( args... );
-    }
-
- private:
-    const FunType f;
-};
 
 using DecompressorFunctionPtr = void(*)(void*, void*, size_t);
-using DecompressorFunctionPtrArr = DecompressorFunctionPtr[];
-//using DecompressorFunctionPtrArr = DecompressorFunctionPtr[];
 
-DecompressorFunctionPtrArr Reader3Arr3 = {
+DecompressorFunctionPtr Reader3Arr3 []= {
     &ImitateCleverPostDecompressionAlgorithm,
     &ImitateCleverPostDecompressionAlgorithm,
     nullptr,
     nullptr
 };
-
-//ListOfDecompressorFunctors Reader3List3 = {
-//    SimpleFunctor<void, void*, void*, size_t>( ImitateCleverPostDecompressionAlgorithm ),
-//    SimpleFunctor<void, void*, void*, size_t>( &ImitateCleverPostDecompressionAlgorithm ),
-//    nullptr
-//};
-

@@ -19,7 +19,9 @@ struct Reader2Helper<TypeList<Head1, Tail1...>, TypeList<Head2, Tail2...>, TypeL
 
         compressed.decompress();
 
-        Reader2Helper<TypeList<Tail1...>, TypeList<Tail2...>, TypeList<Tail3...>>::Read( ifs, mem + Head2::SizeOf() );
+        delete srcMem;
+
+        Reader2Helper<TypeList<Tail1...>, TypeList<Tail2...>, TypeList<Tail3...>>::Read( ifs, mem + sizeof(Head1) );
     }
 };
 
@@ -37,7 +39,9 @@ struct Reader2Helper<TypeList<Head1, Tail1...>, TypeList<NoneType, Tail2...>, Ty
 
         decompressor.decompress();
 
-        Reader2Helper<TypeList<Tail1...>, TypeList<Tail2...>, TypeList<Tail3...>>::Read( ifs, mem + Head3::CompressedType::SizeOf() );
+        delete srcMem;
+
+        Reader2Helper<TypeList<Tail1...>, TypeList<Tail2...>, TypeList<Tail3...>>::Read( ifs, mem + sizeof(Head1) );
     }
 };
 
